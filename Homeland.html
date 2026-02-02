@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Homeland - Triagem</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+        
+        // Ícones simulados (como estamos em um arquivo HTML único)
+        const Icon = ({ name, size = 18, className = "" }) => {
+            return <i data-lucide={name} style={{width: size, height: size}} className={className}></i>;
+        };
+
+        const App = () => {
+            const [pacientes, setPacientes] = useState([]);
+            const [nome, setNome] = useState('');
+            const [idade, setIdade] = useState('');
+            const [relatorio, setRelatorio] = useState('');
+            const [prioridade, setPrioridade] = useState('verde');
+
+            React.useEffect(() => {
+                lucide.createIcons();
+            }, [pacientes]);
+
+            const adicionarPaciente = (e) => {
+                e.preventDefault();
+                const novo = {
+                    id: Date.now(),
+                    nome, idade, relatorio, prioridade,
+                    horaEntrada: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                };
+                setPacientes([novo, ...pacientes]);
+                setNome(''); setIdade(''); setRelatorio(''); setPrioridade('verde');
+            };
+
+            const removerPaciente = (id) => setPacientes(pacientes.filter(p => p.id !== id));
+
+            const estilosCard = {
+                vermelho: { border: 'border-l-8 border-red-500', bg: 'bg-white', badge: 'bg-red-100 text-red-800', icon: 'text-red-500' },
+                azul: { border: 'border-l-8 border-blue-500', bg: 'bg-white', badge: 'bg-blue-100 text-blue-800', icon: 'text-blue-500' },
+                verde: { border: 'border-l-8 border-green-500', bg: 'bg-white', badge: 'bg-green-100 text-green-800', icon: 'text-green-500' }
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-100 p-4 md:p-8 font-sans">
+                    <header className="max-w-6xl mx-auto mb-8 flex items-center justify-between bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-blue-600 p-3 rounded-lg text-white font-bold">H</div>
+                            <div>
+                                <h1 className="text-2xl font-bold text-slate-800">Sistema de Triagem</h1>
+                                <p className="text-slate-500 text-sm">Hospital Homeland (RP)</p>
+                            </div>
+                        </div>
+                        <div className="hidden md:flex gap-4 text-sm font-medium">
+                            <div className="px-3 py-1 bg-red-100 text-red-700 rounded-full">Críticos: {pacientes.filter(p => p.prioridade === 'vermelho').length}</div>
+                            <div className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full">Observação: {pacientes.filter(p => p.prioridade === 'azul').length}</div>
+                            <div className="px-3 py-1 bg-green-100 text-green-700 rounded-full">Estáveis: {pacientes.filter(p => p.prioridade === 'verde').length}</div>
+                        </div>
+                    </header>
+
+                    <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div className="lg:col-span-1">
+                            <form onSubmit={adicionarPaciente} className="bg-white p-6 rounded-xl shadow-md border border-slate-200 space-y-4">
+                                <h2 className="text-lg font-bold mb-4">Novo Paciente</h2>
+                                <input type="text" value={nome} onChange={e => setNome(e.target.value)} placeholder="Nome Completo" className="w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500" required />
+                                <input type="number" value={idade} onChange={e => setIdade(e.target.value)} placeholder="Idade" className="w-full px-4 py-2 border rounded-lg outline-none" required />
+                                <div className="grid grid-cols-3 gap-2">
+                                    {['verde', 'azul', 'vermelho'].map(c => (
+                                        <button key={c} type="button" onClick={() => setPrioridade(c)} className={`p-2 text-xs rounded border-2 uppercase font-bold ${prioridade === c ? 'border-slate-800 bg-slate-800 text-white' : 'border-slate-200'}`}>{c}</button>
+                                    ))}
+                                </div>
+                                <textarea value={relatorio} onChange={e => setRelatorio(e.target.value)} placeholder="Relatório médico..." className="w-full px-4 py-2 border rounded-lg h-32 resize-none" required></textarea>
+                                <button type="submit" className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 shadow-lg">Cadastrar Paciente</button>
+                            </form>
+                        </div>
+
+                        <div className="lg:col-span-2">
+                            <h2 className="text-xl font-bold mb-4">Pacientes em Espera ({pacientes.length})</h2>
+                            <div className="space-y-4">
+                                {pacientes.map(p => (
+                                    <div key={p.id} className={`p-5 rounded-xl shadow-sm border ${estilosCard[p.prioridade].border} bg-white`}>
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h3 className="text-lg font-bold uppercase">{p.nome}</h3>
+                                                <p className="text-sm text-slate-500">{p.idade} anos | Entrada: {p.horaEntrada}</p>
+                                            </div>
+                                            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${estilosCard[p.prioridade].badge}`}>{p.prioridade}</span>
+                                        </div>
+                                        <div className="mt-3 bg-slate-50 p-3 rounded-lg border text-sm text-slate-700 italic">"{p.relatorio}"</div>
+                                        <button onClick={() => removerPaciente(p.id)} className="mt-3 text-red-500 text-sm font-bold flex items-center gap-1 hover:underline">Dar Alta</button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
