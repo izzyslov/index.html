@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Payasos - Sistema de Sorteios Premium</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js"></script>
+    <style>
+        :root {
+            --preto: #0d0d0d;
+            --branco: #ffffff;
+            --roxo: #7c3aed;
+            --roxo-claro: #a78bfa;
+            --cinza: #1f2937;
+            --cinza-claro: #374151;
+            --azul-verificado: #1d9bf0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: var(--preto);
+            color: var(--branco);
+            overflow-x: hidden;
+        }
+
+        /* LOGIN SCREEN */
+        #login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--preto);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            flex-direction: column;
+        }
+
+        .login-container {
+            text-align: center;
+        }
+
+        .login-logo {
+            font-size: 60px;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .login-card {
+            background: var(--cinza);
+            padding: 40px;
+            border-radius: 15px;
+            border: 2px solid var(--roxo);
+            width: 90%;
+            max-width: 350px;
+            box-shadow: 0 0 30px rgba(124, 58, 237, 0.3);
+        }
+
+        .login-card h2 {
+            color: var(--roxo);
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .login-card input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid var(--roxo);
+            background: #111;
+            color: var(--branco);
+            font-size: 14px;
+        }
+
+        .login-card input::placeholder {
+            color: #666;
+        }
+
+        .login-card button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            background: var(--roxo);
+            color: var(--branco);
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .login-card button:hover {
+            background: var(--roxo-claro);
+            box-shadow: 0 0 20px rgba(124, 58, 237, 0.5);
+        }
+
+        .mode-selector {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .mode-btn {
+            padding: 10px 20px;
+            background: var(--cinza-claro);
+            color: var(--branco);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .mode-btn.active {
+            border-color: var(--roxo);
+            background: var(--roxo);
+        }
+
+        /* HEADER */
+        .adm-header {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding: 20px 15px;
+            background: var(--cinza);
+            border-bottom: 2px solid var(--roxo);
+            align-items: center;
+        }
+
+        .adm-story {
+            text-align: center;
+            min-width: 90px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .adm-story img {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 2px solid var(--roxo);
+            object-fit: cover;
+            background: #222;
+            transition: all 0.3s;
+        }
+
+        .adm-story:hover img {
+            border-color: var(--roxo-claro);
+            box-shadow: 0 0 15px rgba(124, 58, 237, 0.4);
+        }
+
+        .adm-story p {
+            font-size: 11px;
+            margin-top: 8px;
+            font-weight: bold;
+            word-break: break-word;
+        }
+
+        .adm-story.active img {
+            border-color: #FFD700;
+            box-shadow: 0 0 20px var(--roxo);
+        }
+
+        .adm-story-btns {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+            justify-content: center;
+        }
+
+        .adm-story-btns button {
+            font-size: 7px;
+            padding: 2px 5px;
+            background: #333;
+            border: none;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            width: auto;
+        }
+
+        /* STATUS BAR */
+        .status-bar {
+            background: var(--roxo);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .status-info {
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #fff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .status-bar button {
+            background: var(--branco);
+            color: var(--preto);
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .status-bar button:hover {
+            transform: scale(1.05);
+        }
+
+        /* CONTAINER */
+        .container {
+            padding: 20px;
+            max-width: 600px;
+            margin: auto;
+            padding-bottom: 100px;
+        }
+
+        .card {
+            background: var(--cinza);
+            border: 1px solid var(--cinza-claro);
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            border-color: var(--roxo);
+            box-shadow: 0 0 15px rgba(124, 58, 237, 0.2);
+        }
+
+        h3 {
+            color: var(--roxo);
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border: 1px solid var(--cinza-claro);
+            background: #111;
+            color: var(--branco);
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        input::placeholder {
+            color: #666;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border: none;
+            background: var(--roxo);
+            color: var(--branco);
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: var(--roxo-claro);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(124, 58, 237, 0.3);
+        }
+
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .btn-sec {
+            background: transparent;
+            border: 2px solid var(--roxo);
+            color: var(--roxo);
+        }
+
+        .btn-sec:hover {
+            background: var(--roxo);
+            color: var(--branco);
+        }
+
+        .btn-delete {
+            background: #dc2626;
+        }
+
+        .btn-delete:hover {
+            background: #b91c1c;
+        }
+
+        /* CANVAS AREA */
+        .canvas-area {
+            width: 100%;
+            min-height: 650px;
+            background: var(--branco);
+            color: #000;
+            padding: 30px;
+            box-sizing: border-box;
+            border: 20px solid #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            font-family: Arial, sans-serif;
+            position: relative;
+        }
+
+        .img-slogan {
+            max-width: 200px;
+            max-height: 80px;
+            object-fit: contain;
+            margin-bottom: 15px;
+        }
+
+        .img-main {
+            width: 140px;
+            height: 140px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin: 15px 0;
+            border: 3px solid #000;
+        }
+
+        .img-background {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 100px;
+            height: 100px;
+            opacity: 0.1;
+            object-fit: cover;
+            border-radius: 10px;
+            z-index: 0;
+        }
+
+        .img-prize {
+            width: 110px;
+            height: 110px;
+            object-fit: cover;
+            margin-top: 15px;
+            border: 2px solid #000;
+            border-radius: 8px;
+        }
+
+        .num-box {
+            display: inline-block;
+            padding: 12px;
+            border: 3px solid #000;
+            margin: 6px;
+            font-weight: 900;
+            font-size: 32px;
+            background: #f0f0f0;
+            min-width: 50px;
+            border-radius: 4px;
+        }
+
+        .color-circle {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid #000;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        .card-id {
+            background: #000;
+            color: #fff;
+            padding: 8px 20px;
+            font-weight: bold;
+            margin: 15px 0;
+            border-radius: 4px;
+            font-size: 14px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .admin-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-top: 2px solid #000;
+            padding-top: 20px;
+            margin-top: 20px;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .admin-photo {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 3px solid #000;
+            object-fit: cover;
+        }
+
+        .admin-info {
+            text-align: left;
+        }
+
+        .admin-name {
+            font-size: 14px;
+            font-weight: 900;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .verified-badge {
+            color: var(--azul-verificado);
+            font-size: 14px;
+        }
+
+        .admin-role {
+            font-size: 10px;
+            color: #666;
+            margin: 0;
+        }
+
+        .player-name {
+            font-size: 13px;
+            margin-top: 20px;
+            font-weight: bold;
+            position: relative;
+            z-index: 1;
+        }
+
+        .display {
+            font-size: 28px;
+            margin: 20px 0;
+            font-weight: bold;
+            color: var(--roxo);
+            min-height: 40px;
+        }
+
+        .winner-alert {
+            background: #FFD700;
+            color: #000;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: bold;
+            text-align: center;
+            border: 3px solid #000;
+            animation: flash 0.8s infinite;
+        }
+
+        @keyframes flash {
+            0%, 100% { background: #FFD700; }
+            50% { background: #FFF; }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--cinza);
+            padding: 30px;
+            border-radius: 12px;
+            border: 2px solid var(--roxo);
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-close {
+            float: right;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--roxo);
+            font-weight: bold;
+        }
+
+        .modal-close:hover {
+            color: var(--roxo-claro);
+        }
+
+        .hist-item {
+            background: #111;
+            padding: 10px;
+            margin: 8px 0;
+            border-left: 4px solid var(--roxo);
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            border-radius: 4px;
+        }
+
+        .ganhadores-lista {
+            background: #111;
+            border: 1px solid var(--roxo);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .win-row {
+            border-bottom: 1px solid var(--cinza-claro);
+            padding: 10px 0;
+            font-size: 12px;
+        }
+
+        .win-row:last-child {
+            border-bottom: none;
+        }
+
+        .monitor-card {
+            background: #111;
+            border: 1px solid var(--cinza-claro);
+            padding: 12px;
+            margin-top: 15px;
+            border-radius: 8px;
+            font-size: 11px;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .visitor-mode .card {
+            opacity: 0.6;
+        }
+
+        .visitor-note {
+            background: var(--roxo);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .card-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .card-controls button {
+            flex: 1;
+            padding: 10px;
+            font-size: 11px;
+        }
+
+        h4 {
+            color: var(--roxo);
+            font-size: 13px;
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+
+        .animal-display {
+            font-size: 36px;
+            margin: 15px 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .admin-profile-modal .modal-content {
+            max-width: 400px;
+        }
+
+        .profile-stats {
+            background: #111;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .stat-box {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--roxo);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .divider {
+            border-top: 1px solid var(--cinza-claro);
+            margin: 15px 0;
+        }
+
+        .firebase-status {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #22c55e;
+            margin-right: 5px;
+            animation: pulse-glow 2s infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            50% { box-shadow: 0 0 0 5px rgba(34, 197, 94, 0); }
+        }
+
+        .firebase-status.offline {
+            background: #dc2626;
+            animation: none;
+        }
+
+        /* RESPONSIVO */
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+
+            .card {
+                padding: 15px;
+            }
+
+            .adm-header {
+                gap: 10px;
+                padding: 15px 10px;
+            }
+
+            .canvas-area {
+                padding: 20px;
+                min-height: 500px;
+            }
+
+            .num-box {
+                font-size: 24px;
+                padding: 10px;
+                margin: 4px;
+            }
+
+            button {
+                font-size: 11px;
+                padding: 10px;
+            }
+
+            .admin-section {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .admin-info {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen">
+        <div class="login-container">
+            <div class="login-logo">🎪</div>
+            <div class="login-card">
+                <h2>PAYASOS</h2>
+                <p style="color: #888; font-size: 12px; margin-bottom: 20px;">Sistema de Sorteios Premium</p>
+                <input type="text" id="user-in" placeholder="Usuário">
+                <input type="password" id="pass-in" placeholder="Senha">
+                <button onclick="login()">ENTRAR</button>
+                <div class="mode-selector">
+                    <button class="mode-btn active" onclick="setMode('admin')">Admin</button>
+                    <button class="mode-btn" onclick="setMode('visitor')">Visitante</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main-content" style="display:none">
+        <div class="adm-header" id="adm-list"></div>
+        <div class="status-bar">
+            <span class="firebase-status" id="firebase-status"></span>
+            <span class="status-info" id="status-limit">Fichas: 0 / Limite: 10</span>
+            <button onclick="quickRefresh()">🔄 SYNC</button>
+            <button onclick="alterarLimite()" id="btn-limit-admin">LIMITE</button>
+        </div>
+
+        <div class="container">
+            <!-- ADMIN ONLY CONTENT -->
+            <div id="admin-panel">
+                <div class="card">
+                    <h3>🎨 Design da Banca</h3>
+                    <input type="file" onchange="upImg(this, 'slogan')"><p style="font-size:9px">Slogan/Logo</p>
+                    <input type="file" onchange="upImg(this, 'main')"><p style="font-size:9px">Animal/Imagem Central</p>
+                    <input type="file" onchange="upImg(this, 'prize')"><p style="font-size:9px">Foto do Prêmio</p>
+                    <input type="file" onchange="upImg(this, 'background')"><p style="font-size:9px">Fundo da Ficha (Opcional)</p>
+                </div>
+
+                <div class="card">
+                    <h3>🎟️ Criar Cartelas</h3>
+                    <input type="text" id="p-name" placeholder="Nome do Jogador">
+                    <button onclick="gera('BINGO')">BINGO (7 nºs)</button>
+                    <button onclick="gera('BICHO')" class="btn-sec">ANIMAL</button>
+                    <button onclick="gera('CORES')" class="btn-sec">CORES</button>
+                    <button onclick="gera('RIFA')">RIFA (1 nº)</button>
+                </div>
+
+                <div class="card">
+                    <h3>🎲 Sorteio e Ganhadores</h3>
+                    <div class="display" id="display">AGUARDANDO SORTEIO</div>
+
+                    <button onclick="sorteia('BINGO')">SORTEAR BINGO</button>
+                    <button onclick="sorteia('BICHO')" class="btn-sec">SORTEAR ANIMAL</button>
+                    <button onclick="sorteia('CORES')" class="btn-sec">SORTEAR COR</button>
+                    <button onclick="sorteia('RIFA')">SORTEAR RIFA</button>
+
+                    <button onclick="openGanhadores()" style="margin-top: 15px; background: #444; border: 1px solid var(--roxo);">🔍 VERIFICAR GANHADORES</button>
+
+                    <div id="ganhador-notificacao"></div>
+
+                    <div class="monitor-card">
+                        <h4 style="margin-top: 0;">📊 FICHAS NO BANCO</h4>
+                        <div id="monitor-corpo" style="color:#888">Carregando fichas...</div>
+                    </div>
+
+                    <h4>📜 ÚLTIMOS SORTEIOS</h4>
+                    <div id="historico-lista" style="max-height:150px; overflow-y:auto; background:#000; padding:5px;"></div>
+
+                    <button onclick="limparTudo()" style="font-size:10px; margin-top:15px; background:#dc2626;">🔐 LIMPAR TUDO</button>
+                </div>
+            </div>
+
+            <!-- VISITOR MODE CONTENT -->
+            <div id="visitor-panel" style="display:none">
+                <div class="visitor-note">
+                    👁️ MODO VISITANTE - Apenas Leitura
+                </div>
+
+                <div class="card">
+                    <h3>🏆 Resultados de Sorteios</h3>
+                    <div class="display" id="display-visitor">AGUARDANDO SORTEIO</div>
+                    <h4>📜 ÚLTIMOS RESULTADOS</h4>
+                    <div id="historico-lista-visitor" style="max-height:200px; overflow-y:auto; background:#000; padding:10px;"></div>
+                </div>
+
+                <div class="card">
+                    <h3>🏆 Ganhadores Verificados</h3>
+                    <div id="ganhadores-lista-visitor"></div>
+                </div>
+
+                <div class="card">
+                    <h3>👥 Administradores</h3>
+                    <div id="adms-info-visitor"></div>
+                </div>
+            </div>
+
+            <div id="output"></div>
+        </div>
+    </div>
+
+    <!-- MODAL: GANHADORES -->
+    <div id="modal-ganhadores" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeGanhadores()">✕</span>
+            <h4>🏆 JOGADORES PREMIADOS</h4>
+            <div id="corpo-lista-win"></div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADMIN PROFILE -->
+    <div id="modal-admin-profile" class="modal admin-profile-modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeAdminProfile()">✕</span>
+            <h3>PERFIL DO ADMINISTRADOR</h3>
+            <div id="profile-content"></div>
+        </div>
+    </div>
+
+<script>
+    // ========== FIREBASE CONFIG ==========
+    const firebaseConfig = {
+        apiKey: "AIzaSyBWQN8tD9K2vP8mQ3rL5wX9zY0aB1cD2eF",
+        authDomain: "payasos-lottery.firebaseapp.com",
+        projectId: "payasos-lottery",
+        storageBucket: "payasos-lottery.appspot.com",
+        messagingSenderId: "123456789",
+        databaseURL: "https://payasos-lottery-default-rtdb.firebaseio.com"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // ========== APP CONSTANTS ==========
+    const AUTH = { u: "LovyxMeow", p: "@LovyxMeow3006", s: "LovyxMeow" };
+    const SITE_NAME = "PAYASOS";
+
+    let imgs = { slogan: null, main: null, prize: null, background: null };
+    let currentMode = 'admin';
+    let isOnline = true;
+
+    const ANIMAIS = [
+        "Leão", "Tigre", "Elefante", "Zebra", "Girafa", "Macaco", "Cobra", "Jacaré", 
+        "Urso", "Lobo", "Águia", "Cavalo", "Touro", "Canguru", "Panda", "Rinoceronte", 
+        "Hipopótamo", "Raposa", "Gato", "Cachorro", "Baleia", "Golfinho", "Morcego", 
+        "Capivara", "Beija-flor", "Pinguim", "Arara", "Coruja", "Flamingo", "Tucano", 
+        "Tartaruga", "Camaleão", "Sapo", "Salamandra", "Borboleta"
+    ];
+
+    const CORES = [
+        { nome: "Azul", hex: "#1d9bf0" },
+        { nome: "Vermelho", hex: "#dc2626" },
+        { nome: "Amarelo", hex: "#fbbf24" },
+        { nome: "Verde", hex: "#22c55e" },
+        { nome: "Laranja", hex: "#f97316" },
+        { nome: "Roxo", hex: "#7c3aed" },
+        { nome: "Rosa", hex: "#ec4899" },
+        { nome: "Marrom", hex: "#92400e" },
+        { nome: "Preto", hex: "#000000" },
+        { nome: "Branco", hex: "#ffffff" },
+        { nome: "Cinza", hex: "#6b7280" },
+        { nome: "Bege", hex: "#d2b48c" },
+        { nome: "Violeta", hex: "#a78bfa" },
+        { nome: "Turquesa", hex: "#14b8a6" },
+        { nome: "Dourado", hex: "#fbbf24" },
+        { nome: "Prata", hex: "#d1d5db" },
+        { nome: "Lilás", hex: "#c084fc" },
+        { nome: "Salmão", hex: "#fa8072" },
+        { nome: "Marfim", hex: "#fffff0" },
+        { nome: "Oliva", hex: "#808000" }
+    ];
+
+    // ========== FIREBASE LISTENERS ==========
+    let jogadores = [];
+    let historico = [];
+    let limit = 10;
+    let adms = [];
+    let selectedAdm = null;
+
+    function initializeFirebase() {
+        // Verificar conexão
+        db.ref('.info/connected').on('value', (snap) => {
+            isOnline = snap.val() === true;
+            const status = document.getElementById('firebase-status');
+            if(status) {
+                status.classList.toggle('offline', !isOnline);
+                status.title = isOnline ? 'Conectado' : 'Desconectado';
+            }
+        });
+
+        // Carregar jogadores em tempo real
+        db.ref('payasos/jogadores').on('value', (snap) => {
+            jogadores = snap.val() || [];
+            atualizarUI();
+            if(currentMode === 'visitor') atualizarUIVisitor();
+        });
+
+        // Carregar histórico em tempo real
+        db.ref('payasos/historico').on('value', (snap) => {
+            historico = snap.val() || [];
+            atualizarUI();
+            if(currentMode === 'visitor') atualizarUIVisitor();
+        });
+
+        // Carregar configurações
+        db.ref('payasos/config').on('value', (snap) => {
+            const config = snap.val() || {};
+            limit = config.limit || 10;
+            atualizarUI();
+        });
+
+        // Carregar admins
+        db.ref('payasos/adms').on('value', (snap) => {
+            adms = snap.val() || [];
+            if(adms.length === 0) {
+                adms = Array.from({length: 6}, (_, i) => ({
+                    id: i, nome: `ADM ${i+1}`, foto: '', descricao: '', fichasGeradas: 0, editado: false
+                }));
+                salvarAdmsFirebase();
+            }
+            renderAdms();
+            if(!selectedAdm && adms.length > 0) selectedAdm = adms[0];
+        });
+
+        // Carregar imagens
+        db.ref('payasos/imgs').on('value', (snap) => {
+            const imgsDB = snap.val() || {};
+            imgs = { slogan: imgsDB.slogan || null, main: imgsDB.main || null, prize: imgsDB.prize || null, background: imgsDB.background || null };
+        });
+    }
+
+    function salvarAdmsFirebase() {
+        db.ref('payasos/adms').set(adms);
+    }
+
+    // ========== AUTENTICAÇÃO ==========
+    function setMode(mode) {
+        currentMode = mode;
+        document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+        
+        if(mode === 'admin') {
+            document.getElementById('user-in').placeholder = 'Usuário';
+            document.getElementById('pass-in').placeholder = 'Senha';
+        } else {
+            document.getElementById('user-in').placeholder = 'Senha de Visitante';
+            document.getElementById('pass-in').value = '';
+            document.getElementById('pass-in').style.display = 'none';
+        }
+    }
+
+    function login() {
+        const user = document.getElementById('user-in').value;
+        const pass = document.getElementById('pass-in').value;
+
+        if(currentMode === 'admin') {
+            if(user === AUTH.u && pass === AUTH.p) {
+                enterAdmin();
+            } else {
+                alert("❌ Usuário ou Senha incorretos!");
+            }
+        } else {
+            if(user === AUTH.s) {
+                enterVisitor();
+            } else {
+                alert("❌ Senha de Visitante incorreta!");
+            }
+        }
+    }
+
+    function enterAdmin() {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+        document.getElementById('admin-panel').style.display = 'block';
+        document.getElementById('visitor-panel').style.display = 'none';
+        document.getElementById('btn-limit-admin').style.display = 'block';
+        document.body.classList.remove('visitor-mode');
+        
+        initializeFirebase();
+        renderAdms();
+        atualizarUI();
+    }
+
+    function enterVisitor() {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+        document.getElementById('admin-panel').style.display = 'none';
+        document.getElementById('visitor-panel').style.display = 'block';
+        document.getElementById('btn-limit-admin').style.display = 'none';
+        document.body.classList.add('visitor-mode');
+
+        initializeFirebase();
+        renderAdms();
+        atualizarUIVisitor();
+    }
+
+    function renderAdms() {
+        const list = document.getElementById('adm-list');
+        if(!list || !adms || adms.length === 0) return;
+        
+        list.innerHTML = adms.map(a => `
+            <div class="adm-story ${selectedAdm && selectedAdm.id === a.id ? 'active' : ''}" onclick="selectAdm(${a.id})">
+                <img src="${a.foto || 'https://via.placeholder.com/70/222/fff?text=ADM'}" onerror="this.src='https://via.placeholder.com/70/222/fff?text=ADM'">
+                <p>${a.nome}</p>
+                ${currentMode === 'admin' ? `
+                    <div class="adm-story-btns">
+                        <button onclick="openAdminProfile(${a.id})">PERFIL</button>
+                        <button onclick="editAdm(${a.id})">EDITAR</button>
+                    </div>
+                ` : ''}
+            </div>
+        `).join('');
+    }
+
+    function selectAdm(id) {
+        selectedAdm = adms.find(x => x.id === id);
+        renderAdms();
+    }
+
+    function openAdminProfile(id) {
+        const adm = adms.find(x => x.id === id);
+        const content = document.getElementById('profile-content');
+        const fichasDoAdm = jogadores.filter(j => j.adminResponsavel === adm.nome).length;
+        
+        content.innerHTML = `
+            <div style="text-align: center; margin-bottom: 20px;">
+                <img src="${adm.foto || 'https://via.placeholder.com/100/222/fff?text=ADM'}" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--roxo); object-fit: cover;">
+            </div>
+            <h4 style="text-align: center;">${adm.nome}</h4>
+            <p style="text-align: center; color: #888; font-size: 12px;">${adm.descricao || 'Sem descrição'}</p>
+            <div class="divider"></div>
+            <div class="profile-stats">
+                <div class="stat-box">
+                    <div class="stat-number">${adm.fichasGeradas || 0}</div>
+                    <div class="stat-label">Fichas Criadas</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number">${fichasDoAdm}</div>
+                    <div class="stat-label">Fichas Ativas</div>
+                </div>
+            </div>
+            ${currentMode === 'admin' ? `
+                <div class="divider"></div>
+                <button onclick="editAdm(${id})">EDITAR PERFIL</button>
+                <button onclick="deleteAdm(${id})" class="btn-delete">DELETAR</button>
+            ` : ''}
+        `;
+        
+        document.getElementById('modal-admin-profile').classList.add('active');
+    }
+
+    function closeAdminProfile() {
+        document.getElementById('modal-admin-profile').classList.remove('active');
+    }
+
+    function editAdm(id) {
+        if(currentMode !== 'admin') return alert("Apenas administradores podem editar!");
+        
+        const adm = adms.find(x => x.id === id);
+        
+        if(adm.editado && prompt("🔐 Senha de Segurança:") !== AUTH.s) return;
+        
+        const nome = prompt("Nome do ADM:", adm.nome);
+        if(!nome) return;
+        
+        const descricao = prompt("Descrição (Bio):", adm.descricao || "");
+        
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = (e) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                adm.nome = nome;
+                adm.descricao = descricao;
+                adm.foto = ev.target.result;
+                adm.editado = true;
+                salvarAdmsFirebase();
+                renderAdms();
+                alert("✅ Perfil atualizado!");
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        };
+        input.click();
+    }
+
+    function deleteAdm(id) {
+        if(currentMode !== 'admin') return;
+        
+        if(prompt("Confirme digitando a senha para deletar:") !== AUTH.s) return;
+        
+        adms = adms.filter(a => a.id !== id);
+        salvarAdmsFirebase();
+        
+        if(selectedAdm.id === id) selectedAdm = adms[0];
+        
+        renderAdms();
+        alert("✅ Administrador removido!");
+    }
+
+    function alterarLimite() {
+        if(prompt("🔐 Digite a senha (LovyxMeow):") === AUTH.s) {
+            const nl = prompt("Novo limite de fichas:", limit);
+            if(nl && !isNaN(nl)) {
+                limit = parseInt(nl);
+                db.ref('payasos/config').set({ limit: limit });
+                alert("✅ Limite atualizado!");
+            }
+        } else {
+            alert("❌ Senha errada!");
+        }
+    }
+
+    function upImg(el, tipo) {
+        if(!el.files[0]) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            imgs[tipo] = e.target.result;
+            db.ref('payasos/imgs/' + tipo).set(e.target.result);
+            alert("✅ Imagem salva na nuvem!");
+        };
+        reader.readAsDataURL(el.files[0]);
+    }
+
+    function gera(tipo) {
+        if(currentMode !== 'admin') return alert("Apenas administradores podem criar fichas!");
+        if(jogadores.length >= limit) return alert("⚠️ Limite de fichas atingido!");
+        
+        const nome = document.getElementById('p-name').value.trim() || "JOGADOR";
+        const id = Date.now();
+        let val;
+
+        if(tipo === 'BINGO') {
+            val = [];
+            while(val.length < 7) {
+                let n = Math.floor(Math.random()*75)+1;
+                if(!val.includes(n)) val.push(n);
+            }
+        } else if(tipo === 'BICHO') {
+            val = ANIMAIS[Math.floor(Math.random()*ANIMAIS.length)];
+        } else if(tipo === 'CORES') {
+            val = CORES[Math.floor(Math.random()*CORES.length)];
+        } else {
+            val = Math.floor(Math.random()*100)+1;
+        }
+
+        const player = {id, nome, tipo, val, adminResponsavel: selectedAdm.nome, dataCriacao: new Date().toLocaleString('pt-BR')};
+        jogadores.push(player);
+        selectedAdm.fichasGeradas = (selectedAdm.fichasGeradas || 0) + 1;
+        
+        db.ref('payasos/jogadores/' + id).set(player);
+        salvarAdmsFirebase();
+
+        renderCard(id, nome, tipo, val);
+        document.getElementById('p-name').value = '';
+        alert("✅ Ficha criada e sincronizada!");
+    }
+
+    function renderCard(id, nome, tipo, val) {
+        let content = '';
+        
+        if(Array.isArray(val)) {
+            content = val.map(n => `<div class="num-box">${n}</div>`).join('');
+        } else if(tipo === 'CORES') {
+            const cor = val;
+            content = `<div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin: 15px 0; position: relative; z-index: 1;"><div class="color-circle" style="background: ${cor.hex};"></div><div class="num-box">${cor.nome}</div></div>`;
+        } else if(tipo === 'BICHO') {
+            const animals = ["🦁", "🐯", "🐘", "🦓", "🦒", "🐒", "🐍", "🐊", "🐻", "🐺", "🦅", "🐴", "🐂", "🦘", "🐼", "🦏", "🦛", "🦊", "🐱", "🐶", "🐋", "🐬", "🦇", "🦗", "🧢", "🧊", "🦜", "🦉", "🦩", "🦜", "🐢", "🦎", "🐸", "🦑", "🦋"];
+            const animalIndex = ANIMAIS.indexOf(val);
+            content = `<div class="animal-display">${animals[animalIndex] || "🐾"}</div><div class="num-box">${val}</div>`;
+        } else {
+            content = `<div class="num-box">${val}</div>`;
+        }
+
+        const html = `
+            <div id="card-${id}" style="margin-top: 30px;">
+                <div class="canvas-area" id="c-${id}">
+                    ${imgs.background ? `<img src="${imgs.background}" class="img-background">` : ''}
+                    ${imgs.slogan ? `<img src="${imgs.slogan}" class="img-slogan">` : `<h2 style="font-size: 32px; margin: 0; color: var(--roxo); position: relative; z-index: 1;">${SITE_NAME}</h2>`}
+                    <div style="border-top: 2px solid #000; border-bottom: 2px solid #000; width: 100%; margin: 15px 0; padding: 10px 0; font-weight: bold; font-size: 16px; position: relative; z-index: 1;">SISTEMA ${tipo}</div>
+                    ${imgs.main ? `<img src="${imgs.main}" class="img-main">` : `<div style="font-size: 60px; margin: 20px 0; position: relative; z-index: 1;">🎪</div>`}
+                    <div style="margin: 15px 0; position: relative; z-index: 1;">${content}</div>
+                    <div class="card-id">ID: ${id}</div>
+                    ${imgs.prize ? `<img src="${imgs.prize}" class="img-prize">` : `<p style="font-size: 12px; position: relative; z-index: 1;">PRÊMIO VIP</p>`}
+                    <div class="admin-section">
+                        <img src="${selectedAdm.foto || 'https://via.placeholder.com/50/222/fff?text=ADM'}" class="admin-photo" onerror="this.src='https://via.placeholder.com/50/222/fff?text=ADM'">
+                        <div class="admin-info">
+                            <p class="admin-name">${selectedAdm.nome}<span class="verified-badge">●</span></p>
+                            <p class="admin-role">VERIFICADO</p>
+                        </div>
+                    </div>
+                    <div class="player-name">👤 JOGADOR: <b>${nome}</b></div>
+                </div>
+                <div class="card-controls">
+                    <button onclick="save('${id}')" style="background: #22c55e;">💾 BAIXAR</button>
+                    ${currentMode === 'admin' ? `<button onclick="deleteCard('${id}')" class="btn-delete">🗑️ DELETAR</button>` : ''}
+                </div>
+            </div>
+        `;
+
+        document.getElementById('output').insertAdjacentHTML('afterbegin', html);
+    }
+
+    function deleteCard(id) {
+        if(currentMode !== 'admin') return;
+        
+        if(confirm("Tem certeza que deseja deletar esta ficha?")) {
+            db.ref('payasos/jogadores/' + id).remove();
+            const card = document.getElementById('card-'+id);
+            if(card) card.remove();
+            alert("✅ Ficha removida!");
+        }
+    }
+
+    function sorteia(tipo) {
+        if(currentMode !== 'admin') return alert("Apenas administradores podem sortear!");
+        
+        let r;
+        if(tipo === 'BINGO') {
+            r = Math.floor(Math.random()*75)+1;
+        } else if(tipo === 'BICHO') {
+            r = ANIMAIS[Math.floor(Math.random()*ANIMAIS.length)];
+        } else if(tipo === 'CORES') {
+            r = CORES[Math.floor(Math.random()*CORES.length)];
+        } else {
+            r = Math.floor(Math.random()*100)+1;
+        }
+
+        const res = String(r.nome || r).toUpperCase();
+        document.getElementById('display').innerText = `${tipo}: ${res}`;
+
+        const sorteioObj = {tipo, resultado: res, hora: new Date().toLocaleTimeString('pt-BR'), timestamp: Date.now()};
+        historico.unshift(sorteioObj);
+        
+        db.ref('payasos/historico/' + sorteioObj.timestamp).set(sorteioObj);
+
+        verificarGanhador(tipo, res);
+        alert("✅ Sorteio realizado: " + res);
+    }
+
+    function verificarGanhador(tipo, sorteado) {
+        const aviso = document.getElementById('ganhador-notificacao');
+        aviso.innerHTML = "";
+        
+        let temGanhador = false;
+        
+        jogadores.forEach(p => {
+            if(p.tipo === tipo) {
+                let acertou = false;
+                
+                if(Array.isArray(p.val)) {
+                    acertou = p.val.includes(parseInt(sorteado));
+                } else if(tipo === 'CORES') {
+                    acertou = p.val.nome.toUpperCase() === sorteado;
+                } else {
+                    acertou = String(p.val).toUpperCase() === sorteado;
+                }
+                
+                if(acertou) {
+                    temGanhador = true;
+                    aviso.innerHTML += `<div class="winner-alert">🏆 ID ${p.id} - ${p.nome.toUpperCase()} GANHOU!</div>`;
+                }
+            }
+        });
+
+        if(!temGanhador) {
+            aviso.innerHTML = `<div style="background: #fbbf24; color: #000; padding: 15px; border-radius: 8px; text-align: center; border: 2px solid #000;">❌ Nenhum Ganhador Neste Sorteio</div>`;
+        }
+    }
+
+    function openGanhadores() {
+        const modal = document.getElementById('modal-ganhadores');
+        const corpo = document.getElementById('corpo-lista-win');
+        let html = "";
+        let temGanhador = false;
+
+        historico.forEach(h => {
+            jogadores.forEach(p => {
+                if(p.tipo === h.tipo) {
+                    let acertou = false;
+                    
+                    if(Array.isArray(p.val)) {
+                        acertou = p.val.includes(parseInt(h.resultado));
+                    } else if(p.tipo === 'CORES') {
+                        acertou = p.val.nome.toUpperCase() === h.resultado;
+                    } else {
+                        acertou = String(p.val).toUpperCase() === h.resultado;
+                    }
+                    
+                    if(acertou) {
+                        temGanhador = true;
+                        html += `<div class="win-row"><b>🆔 ${p.id}</b> - ${p.nome}<br><small style="color: var(--roxo);">Ganhou em ${h.tipo} (${h.resultado}) às ${h.hora}</small></div>`;
+                    }
+                }
+            });
+        });
+
+        corpo.innerHTML = temGanhador ? html : "<p style='font-size: 12px; color: #666; text-align: center;'>Nenhum ganhador registrado.</p>";
+        modal.classList.add('active');
+    }
+
+    function closeGanhadores() {
+        document.getElementById('modal-ganhadores').classList.remove('active');
+    }
+
+    function atualizarUI() {
+        document.getElementById('status-limit').innerText = `Fichas: ${jogadores.length || 0} / Limite: ${limit}`;
+        document.getElementById('historico-lista').innerHTML = historico.length ? historico.slice(0, 10).map(h => `
+            <div class="hist-item"><span><b>${h.tipo}:</b> ${h.resultado}</span> <span>${h.hora}</span></div>
+        `).join('') : '<p style="color: #666; text-align: center; padding: 10px;">Nenhum sorteio</p>';
+
+        const fichasList = jogadores.length ? jogadores.map(p => `ID: ${p.id} | ${p.tipo} | ${p.nome} | ${p.adminResponsavel}`).slice(0, 5).join('<br>') : "Nenhuma ficha registrada.";
+        document.getElementById('monitor-corpo').innerHTML = fichasList;
+    }
+
+    function atualizarUIVisitor() {
+        document.getElementById('display-visitor').innerText = document.getElementById('display').innerText || "AGUARDANDO SORTEIO";
+        
+        document.getElementById('historico-lista-visitor').innerHTML = historico.length ? historico.slice(0, 10).map(h => `
+            <div class="hist-item"><span><b>${h.tipo}:</b> ${h.resultado}</span> <span>${h.hora}</span></div>
+        `).join('') : '<p style="color: #666; text-align: center; padding: 10px;">Nenhum sorteio</p>';
+
+        let ganhadoresHTML = '';
+        let temGanhador = false;
+
+        historico.forEach(h => {
+            jogadores.forEach(p => {
+                if(p.tipo === h.tipo) {
+                    let acertou = false;
+                    
+                    if(Array.isArray(p.val)) {
+                        acertou = p.val.includes(parseInt(h.resultado));
+                    } else if(p.tipo === 'CORES') {
+                        acertou = p.val.nome.toUpperCase() === h.resultado;
+                    } else {
+                        acertou = String(p.val).toUpperCase() === h.resultado;
+                    }
+                    
+                    if(acertou) {
+                        temGanhador = true;
+                        ganhadoresHTML += `<div class="win-row"><b>🆔 ${p.id}</b> - ${p.nome}<br><small style="color: var(--roxo);">Ganhou em ${h.tipo} (${h.resultado})</small></div>`;
+                    }
+                }
+            });
+        });
+
+        document.getElementById('ganhadores-lista-visitor').innerHTML = temGanhador ? `<div class="ganhadores-lista">${ganhadoresHTML}</div>` : '<p style="color: #888; text-align: center;">Nenhum ganhador.</p>';
+
+        // Mostrar administradores
+        const admsHTML = adms.map(a => `
+            <div style="background: #111; padding: 10px; margin: 8px 0; border-radius: 8px; display: flex; align-items: center; gap: 10px;">
+                <img src="${a.foto || 'https://via.placeholder.com/40/222/fff?text=ADM'}" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--roxo);">
+                <div>
+                    <p style="font-size: 12px; font-weight: bold; margin: 0;">${a.nome}</p>
+                    <p style="font-size: 10px; color: #888; margin: 0;">${a.descricao || 'Admin'}</p>
+                </div>
+            </div>
+        `).join('');
+        document.getElementById('adms-info-visitor').innerHTML = admsHTML;
+    }
+
+    function quickRefresh() {
+        location.reload();
+    }
+
+    function save(id) {
+        html2canvas(document.getElementById('c-'+id), { scale: 2, useCORS: true, backgroundColor: '#fff' }).then(c => {
+            const link = document.createElement('a');
+            link.download = `${SITE_NAME}-${id}.png`;
+            link.href = c.toDataURL();
+            link.click();
+        });
+    }
+
+    function limparTudo() {
+        if(prompt("🔐 Confirme digitando a senha (LovyxMeow):") === AUTH.s) {
+            db.ref('payasos').remove();
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            alert("❌ Senha incorreta!");
+        }
+    }
+
+    window.addEventListener('load', () => {
+        document.getElementById('pass-in').style.display = 'block';
+    });
+</script>
+
+</body>
+</html>
